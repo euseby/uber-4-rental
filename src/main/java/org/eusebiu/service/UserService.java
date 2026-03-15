@@ -11,6 +11,9 @@ public class UserService {
         this.userRepository = userRepository;
     }
     public User registerUser(User user){
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            throw new RuntimeException("Numele este obligatoriu!");
+        }
         //verific daca exista emailul
         User userExistent = userRepository.findByEmail(user.getEmail());
         if (userExistent != null) {
