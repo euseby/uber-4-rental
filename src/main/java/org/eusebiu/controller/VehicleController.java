@@ -1,10 +1,13 @@
 package org.eusebiu.controller;
 
 import org.eusebiu.dto.CarResponse;
+import org.eusebiu.models.Vehicle;
+import org.eusebiu.repository.VehicleRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -12,17 +15,37 @@ import java.util.List;
 @RequestMapping("/api/vehicles")
 public class VehicleController {
 
-    // API 7: GET ALL CARS (PENTRU BROWSE CARS)
-    // Link: GET http://localhost:8080/api/vehicles
+    // 1. Aducem teava catre baza de date!
+    @Autowired
+    private VehicleRepository vehicleRepository;
+
+    // API 7: GET ALL CARS (DIN BAZA DE DATE!)
     @GetMapping
     public ResponseEntity<List<CarResponse>> getAllVehicles() {
-        // Pe viitor, aici vom chema VehicleService sa ne dea masinile din baza de date
-        // ex: List<Vehicle> masini = vehicleRepository.findAll();
-        List<CarResponse> cars = Arrays.asList(
-                new CarResponse(1L, "Toyota Corolla", 2020, "Sedan", "Downtown", 4.8, 35.00),
-                new CarResponse(2L, "Honda Civic", 2019, "Sedan", "Uptown", 4.5, 30.00),
-                new CarResponse(3L, "BMW X5", 2021, "SUV", "Midtown", 4.9, 75.00)
-        );
-        return ResponseEntity.ok(cars);
+
+        // 2. Scoatem absolut TOATE masinile din tabelul 'vehicles'
+        List<Vehicle> masiniDinBazaDeDate = vehicleRepository.findAll();
+
+        // 3. Pregatim lista pentru frontend (cutiile DTO)
+        List<CarResponse> masiniPentruFrontend = new ArrayList<>();
+
+        // 4. Luam fiecare masina din baza de date si o bagam in "cutia" ei de DTO
+        for (Vehicle v : masiniDinBazaDeDate) {
+            String fullName = v.getBrand() + " " + v.getModel(); // Le lipim (ex: Toyota + Corolla)
+
+            CarResponse dto = new CarResponse(
+                    v.getId(),
+                    fullName,
+                    v.getFabrYear(),
+                    v.getType(),
+                    v.getLocation(),
+                    v.getRating(),
+                    v.getPricePerDay()
+            );
+            masiniPentruFrontend.add(dto);
+        }
+
+        // 5. Trimitem lista! Daca nu ai nicio masina in baza de date, va trimite o lista goala [].
+        return ResponseEntity.ok(masiniPentruFrontend);
     }
 }

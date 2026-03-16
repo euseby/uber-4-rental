@@ -1,13 +1,17 @@
 package org.eusebiu.controller;
 
 import org.eusebiu.dto.*;
+import org.eusebiu.models.Booking;
 import org.eusebiu.models.User;
+import org.eusebiu.repository.VehicleRepository;
 import org.eusebiu.security.JwtUtil;
 import org.eusebiu.service.UserService;
+import org.eusebiu.repository.BookingRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -18,11 +22,14 @@ public class UserController {
 
     private final UserService userService;
     private final JwtUtil jwtUtil; // 1. Am adus Fabrica de Bratari!
-
+    private final BookingRepository bookingRepository;
+    private final VehicleRepository vehicleRepository;
     // 2. Am adaugat jwtUtil in constructor ca sa-l injecteze Spring Boot
-    public UserController(UserService userService, JwtUtil jwtUtil) {
+    public UserController(UserService userService, JwtUtil jwtUtil,BookingRepository bookingRepository,VehicleRepository vehicleRepository) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
+        this.bookingRepository = bookingRepository;
+        this.vehicleRepository = vehicleRepository;
     }
 
     //API 1 REGISTER
@@ -109,25 +116,32 @@ public class UserController {
     @GetMapping("/dashboard")
     public ResponseEntity<?> getDashboardSummary(Principal principal) {
         try {
-            // Verificam bratara (Token-ul)
             if (principal == null) {
                 return ResponseEntity.status(401).body("Nu esti autorizat!");
             }
-            // Luam emailul (doar ca sa ne asiguram ca userul chiar exista in baza noastra)
+
             String email = principal.getName();
             User user = userService.getUserByEmail(email);
 
-            // AICI PE VIITOR VOM FACE MATEMATICA REALA DIN BAZA DE DATE:
-            // ex: int active = bookingRepository.countByUserIdAndStatus(user.getId(), "ACTIVE");
+            // --- MODIFICARE AICI: Înlocuim cifrele "de mână" cu interogări în DB ---
 
-            // Momentan trimitem niste date "mockate" (de test) direct din backend,
-            // ca sa inlocuiesti datele hardcodate din frontend-ul de React.
+            // 1. Numărăm rezervările cu statusul 'Confirmed' din tabelul bookings
+            int active = bookingRepository.countByUserIdAndStatus(user.getId(), "Confirmed");
+
+            // 2. Numărăm toate rezervările acestui utilizator
+            int total = bookingRepository.countByUserId(user.getId());
+
+            // 3. Saved și Rating (momentan le lăsăm așa sau le poți adăuga în tabelul User ulterior)
+            double saved = 0.0;
+            double rating = 5.0;
+
             DashboardSummary dashboardStats = new DashboardSummary(
-                    2,        // 2 Active Bookings
-                    12,       // 12 Total Trips
-                    340.50,   // $340.50 Saved
-                    4.9       // 4.9 Rating
+                    active,   // Din DB
+                    total,    // Din DB
+                    saved,
+                    rating
             );
+
             return ResponseEntity.ok(dashboardStats);
 
         } catch (RuntimeException e) {
@@ -139,22 +153,39 @@ public class UserController {
     @GetMapping("/trips/upcoming")
     public ResponseEntity<?> getUpcomingTrips(Principal principal) {
         try {
-            // Verificam ca omul sa fie logat (sa aiba token valid)
-            if (principal == null) {
-                return ResponseEntity.status(401).body("Nu esti autorizat!");
+            if (principal == null) return ResponseEntity.status(401).body("Neautorizat");
+
+            // 1. Aflam cine e userul
+            User user = userService.getUserByEmail(principal.getName());
+
+            // 2. Luam toate rezervarile lui din baza de date
+            List<Booking> bookingsFromDb = bookingRepository.findByUserId(user.getId());
+
+            // 3. Transformam fiecare Booking intr-un UpcomingTrip (DTO) pentru frontend
+            List<UpcomingTrip> tripsForFrontend = new ArrayList<>();
+
+            for (Booking b : bookingsFromDb) {
+                // Cautam masina ca sa ii stim numele
+                String carName = "Masina Necunoscuta";
+                double pret = 0.0;
+
+                var vehicle = vehicleRepository.findById(b.getVehicleId());
+                if (vehicle.isPresent()) {
+                    carName = vehicle.get().getBrand() + " " + vehicle.get().getModel();
+                    pret = vehicle.get().getPricePerDay(); // Poti calcula si pretul total aici daca vrei
+                }
+
+                // Cream "randul" pentru tabel
+                UpcomingTrip trip = new UpcomingTrip(
+                        carName,
+                        b.getStartDate(), // Data de inceput
+                        b.getStatus(),
+                        pret
+                );
+                tripsForFrontend.add(trip);
             }
 
-            // Pe viitor, aici vom lua lista reala din baza de date:
-            // List<Booking> rezervari = bookingRepository.findUpcomingByEmail(principal.getName());
-
-            // Momentan, construim noi "de mana" lista de test, fix ca in poza de la frontend:
-            List<UpcomingTrip> trips = Arrays.asList(
-                    new UpcomingTrip("Toyota Corolla", "2024-03-15", "Confirmed", 105.00),
-                    new UpcomingTrip("Honda Civic", "2024-03-20", "Pending", 90.00)
-            );
-
-            // Returnam lista cu Status 200 OK!
-            return ResponseEntity.ok(trips);
+            return ResponseEntity.ok(tripsForFrontend);
 
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
