@@ -1,5 +1,6 @@
 package org.eusebiu.service;
 
+import org.eusebiu.dto.UpdateProfileRequest;
 import org.eusebiu.models.User;
 import org.eusebiu.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,5 +36,28 @@ public class UserService {
             throw new RuntimeException("Parola incorecta!");
         }
         return user;
+    }
+    public User getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new RuntimeException("Utilizatorul nu a fost gasit!");
+        }
+        return user;
+    }
+    public User updateUserProfile(String email, UpdateProfileRequest cerereUpdate) {
+        // 1. Gasim user-ul curent in baza de date
+        User user = getUserByEmail(email);
+
+        // 2. Ii actualizam datele cu ce a venit de pe frontend
+        user.setFirstName(cerereUpdate.getFirstName());
+        user.setLastName(cerereUpdate.getLastName());
+        user.setPhone(cerereUpdate.getPhone());
+        user.setAddress(cerereUpdate.getAddress());
+        user.setLicenseNumber(cerereUpdate.getLicenseNumber());
+        user.setLicenseExpiry(cerereUpdate.getLicenseExpiry());
+        user.setBio(cerereUpdate.getBio());
+
+        // 3. Salvam in baza de date noul user modificat
+        return userRepository.save(user);
     }
 }
