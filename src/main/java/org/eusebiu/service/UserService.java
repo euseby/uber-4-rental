@@ -1,18 +1,17 @@
 package org.eusebiu.service;
 
+import lombok.AllArgsConstructor;
 import org.eusebiu.dto.UpdateProfileRequest;
 import org.eusebiu.models.User;
 import org.eusebiu.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@AllArgsConstructor
 public class UserService {
-    @Autowired
     private UserRepository userRepository;
     // Aducem masina de criptat parole!
-    @Autowired
     private PasswordEncoder passwordEncoder;
     public User registerUser(User user){
         if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {

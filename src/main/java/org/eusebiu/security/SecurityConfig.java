@@ -35,6 +35,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // 2. Lasam rutele noastre libere pentru toata lumea
                         .requestMatchers("/api/users/register", "/api/users/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/vehicles").permitAll()
                         // 3. Restul sunt blocate
                         .anyRequest().authenticated()
                 );
