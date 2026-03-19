@@ -40,7 +40,8 @@ public class VehicleController {
                     v.getType(),
                     v.getLocation(),
                     v.getRating(),
-                    v.getPricePerDay()
+                    v.getPricePerDay(),
+                    v.getImageUrl()
             );
             masiniPentruFrontend.add(dto);
         }

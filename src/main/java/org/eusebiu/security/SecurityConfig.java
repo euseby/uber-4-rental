@@ -11,12 +11,20 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
     @Autowired
     private JwtFilter jwtFilter;
+
     // 1. Definim masina de criptat parole
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -28,18 +36,36 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults()) // Activeaza CORS-ul la nivel de securitate
+                // AICI E SECRETUL: Acum stie sa ia setarile din metoda de mai jos!
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Lasam browser-ul sa faca verificarile CORS (OPTIONS)
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // 2. Lasam rutele noastre libere pentru toata lumea
+                        // 1. Lasam rutele noastre libere pentru toata lumea
                         .requestMatchers("/api/users/register", "/api/users/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/vehicles").permitAll()
-                        // 3. Restul sunt blocate
+                        // 2. Restul sunt blocate
                         .anyRequest().authenticated()
                 );
+
         http.addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    // 3. LISTA DE INVITATI PENTRU CORS
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Permitem React-ului (portul 3000) sa ne acceseze
+        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        // Permitem toate tipurile de actiuni
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // Permitem trimiterea de Token-uri si headere JSON
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Aplicam regulile astea pe absolut TOATE rutele ("/**")
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }

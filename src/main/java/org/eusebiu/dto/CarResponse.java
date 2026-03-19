@@ -8,8 +8,8 @@ public class CarResponse {
     private String location;
     private double rating;
     private double pricePerDay;
-
-    public CarResponse(Long id, String name, int year, String type, String location, double rating, double pricePerDay) {
+    private String imageUrl;
+    public CarResponse(Long id, String name, int year, String type, String location, double rating, double pricePerDay, String imageUrl) {
         this.id = id;
         this.name = name;
         this.year = year;
@@ -17,6 +17,7 @@ public class CarResponse {
         this.location = location;
         this.rating = rating;
         this.pricePerDay = pricePerDay;
+        this.imageUrl = imageUrl;
     }
 
     public Long getId() {
@@ -59,9 +60,7 @@ public class CarResponse {
         this.id = id;
     }
 
-    public double getRating() {
-        return rating;
-    }
+    public double getRating() {return rating;}
 
     public double getPricePerDay() {
         return pricePerDay;
@@ -74,4 +73,7 @@ public class CarResponse {
     public void setRating(double rating) {
         this.rating = rating;
     }
+
+    public String getImageUrl(){return imageUrl;}
+    public void setImageUrl(String imageUrl){this.imageUrl = imageUrl;}
 }
