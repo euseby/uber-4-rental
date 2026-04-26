@@ -20,5 +20,5 @@ COPY --from=build /app/target/uber4rental-1.0-SNAPSHOT.jar app.jar
 # Expunem portul 8080 (portul default Spring Boot)
 EXPOSE 8080
 
-# Comanda care porneste serverul
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Comanda care porneste serverul cu limitare de memorie pentru Render Free (evita OOM)
+ENTRYPOINT ["java", "-Xmx300m", "-jar", "app.jar"]
