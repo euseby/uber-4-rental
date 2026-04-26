@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "bookings")
 public class Booking {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = jakarta.persistence.GenerationType.SEQUENCE, generator = "bookings_gen")
+    @jakarta.persistence.SequenceGenerator(name = "bookings_gen", sequenceName = "bookings_seq", allocationSize = 50)
     private Long id;
     private Long userId;
     private Long vehicleId;

@@ -16,4 +16,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     // 3. Gaseste lista de rezervari viitoare pentru tabelul de dashboard
     List<Booking> findByUserId(Long userId);
+
+    // 4. Gaseste rezervarile pentru o lista de masini (folosit pentru Business Dashboard)
+    List<Booking> findByVehicleIdIn(List<Long> vehicleIds);
 }

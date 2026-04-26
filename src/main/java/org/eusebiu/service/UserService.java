@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class UserService {
     private UserRepository userRepository;
-    // Aducem masina de criptat parole!
     private PasswordEncoder passwordEncoder;
+    private EmailService emailService;
     public User registerUser(User user){
         if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
             throw new RuntimeException("Numele este obligatoriu!");
@@ -24,7 +24,17 @@ public class UserService {
         }
         String parolaCriptata = passwordEncoder.encode(user.getPassword());
         user.setPassword(parolaCriptata);
-        return userRepository.save(user);
+        
+        // Seteaza statusul de verificare email
+        user.setEmailVerified(false);
+        user.setVerificationToken(java.util.UUID.randomUUID().toString());
+        
+        User savedUser = userRepository.save(user);
+        
+        // Trimite emailul in background (fara sa blocheze)
+        new Thread(() -> emailService.sendVerificationEmail(savedUser.getEmail(), savedUser.getVerificationToken())).start();
+        
+        return savedUser;
     }
     public User loginUser(String email, String password){
         User user = userRepository.findByEmail(email);
@@ -33,6 +43,9 @@ public class UserService {
         }
         if(!passwordEncoder.matches(password, user.getPassword())){
             throw new RuntimeException("Parola incorecta!");
+        }
+        if (Boolean.FALSE.equals(user.getEmailVerified())) {
+            throw new RuntimeException("Contul nu este verificat! Te rugam sa accesezi linkul primit pe email.");
         }
         return user;
     }
@@ -58,5 +71,15 @@ public class UserService {
 
         // 3. Salvam in baza de date noul user modificat
         return userRepository.save(user);
+    }
+
+    public void verifyUser(String token) {
+        User user = userRepository.findByVerificationToken(token);
+        if (user == null) {
+            throw new RuntimeException("Token invalid sau expirat.");
+        }
+        user.setEmailVerified(true);
+        user.setVerificationToken(null);
+        userRepository.save(user);
     }
 }

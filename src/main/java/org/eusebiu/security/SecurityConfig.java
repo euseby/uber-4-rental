@@ -25,25 +25,24 @@ public class SecurityConfig {
     @Autowired
     private JwtFilter jwtFilter;
 
-    // 1. Definim masina de criptat parole
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // 2. Definim regulile de acces
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                // AICI E SECRETUL: Acum stie sa ia setarile din metoda de mai jos!
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Lasam rutele noastre libere pentru toata lumea
-                        .requestMatchers("/api/users/register", "/api/users/login").permitAll()
+                        // Public routes
+                        .requestMatchers("/api/users/register", "/api/users/login", "/api/users/verify").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/vehicles").permitAll()
-                        // 2. Restul sunt blocate
+                        .requestMatchers(HttpMethod.GET, "/api/reviews/vehicle/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
+                        // Everything else requires authentication (role checks done in controllers)
                         .anyRequest().authenticated()
                 );
 
@@ -51,20 +50,15 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // 3. LISTA DE INVITATI PENTRU CORS
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Permitem React-ului (portul 3000) sa ne acceseze
         configuration.setAllowedOrigins(List.of("http://localhost:3000"));
-        // Permitem toate tipurile de actiuni
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        // Permitem trimiterea de Token-uri si headere JSON
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Aplicam regulile astea pe absolut TOATE rutele ("/**")
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

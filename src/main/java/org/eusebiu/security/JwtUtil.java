@@ -3,6 +3,7 @@ package org.eusebiu.security;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -11,9 +12,9 @@ import java.util.Date;
 @Component // Spunem lui Spring Boot sa o tina in memorie ca pe o unealta
 public class JwtUtil {
 
-    // 1. Cheia noastra secreta (trebuie sa aiba minim 32 de caractere)
-    // In viata reala o tinem ascunsa in application.properties, dar pentru acum e ok aici
-    private final String SECRET_KEY = "AceastaEsteOCheieSecretaFoarteLungaSiSiguraPentruUber4Rental2024!";
+    // 1. Cheia noastra secreta (luata din application.properties)
+    @Value("${jwt.secret}")
+    private String SECRET_KEY;
 
     // 2. Cat timp e valabila bratara (aici am pus 24 de ore in milisecunde)
     private final long EXPIRATION_TIME = 86400000;
